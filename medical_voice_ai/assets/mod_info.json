@@ -1,31 +1,37 @@
 {
-    "models": [
-        {
-            "name": "Gemma-4-E2B-it",
-            "modelId": "litert-community/gemma-4-E2B-it-litert-lm",
-            "sizeGB": 2.59,
-            "description": "A variant of Gemma 4 E2B ready for deployment using LiteRT-LM. Supports text input up to 32K context length.",
-            "modelFile": "gemma-4-E2B-it.litertlm",
-            "commitHash": "7fa1d78473894f7e736a21d920c3aa80f950c0db",
-            "accelerators": [
-                "gpu",
-                "cpu"
-            ],
-            "updateAvailable": true,
-            "bestOverall": true
-        },
-        {
-            "name": "Qwen3-0.6B",
-            "modelId": "litert-community/Qwen3-0.6B",
-            "sizeGB": 0.63,
-            "description": "Lightweight Qwen model optimized for on-device inference. Ideal for fast text generation and reasoning.",
-            "modelFile": "Qwen3-0.6B.litertlm",
-            "commitHash": "4983733",
-            "accelerators": [
-                "cpu"
-            ],
-            "updateAvailable": false,
-            "bestOverall": false
-        }
-    ]
+  "models": [
+    {
+      "name": "Gemma-4-E2B-it",
+      "modelId": "litert-community/gemma-4-E2B-it-litert-lm",
+      "sizeGB": 2.59,
+      "description": "A variant of Gemma 4 E2B ready for deployment using LiteRT-LM. Supports text input up to 32K context length.",
+      "modelFile": "gemma-4-E2B-it.litertlm",
+      "commitHash": "7fa1d78473894f7e736a21d920c3aa80f950c0db",
+      "accelerators": ["gpu", "cpu"],
+      "updateAvailable": true,
+      "bestOverall": true
+    },
+    {
+      "name": "Qwen3-0.6B",
+      "modelId": "litert-community/Qwen3-0.6B",
+      "sizeGB": 0.63,
+      "description": "Lightweight Qwen model optimized for on-device inference. Ideal for fast text generation and reasoning.",
+      "modelFile": "Qwen3-0.6B.litertlm",
+      "commitHash": "4983733",
+      "accelerators": ["cpu"],
+      "updateAvailable": false,
+      "bestOverall": false
+    },
+    {
+      "name": "Whisper-Small-GGUF",
+      "modelId": "litert-community/whisper-small-gguf",
+      "sizeGB": 0.24,
+      "description": "Whisper Small GGUF model for on-device ASR using LiteRT-LM. Converts speech to text locally.",
+      "modelFile": "whisper-small.gguf",
+      "commitHash": "a9b3c2d1",
+      "accelerators": ["gpu", "cpu"],
+      "updateAvailable": false,
+      "bestOverall": true
+    }
+  ]
 }

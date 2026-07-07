@@ -6,6 +6,21 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <flutter_gemma/flutter_gemma_plugin.h>
+#include <flutter_sound/flutter_sound_plugin_c_api.h>
+#include <flutter_tts/flutter_tts_plugin.h>
+#include <printing/printing_plugin.h>
+#include <record_windows/record_windows_plugin_c_api.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
+  FlutterGemmaPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FlutterGemmaPlugin"));
+  FlutterSoundPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FlutterSoundPluginCApi"));
+  FlutterTtsPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FlutterTtsPlugin"));
+  PrintingPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("PrintingPlugin"));
+  RecordWindowsPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("RecordWindowsPluginCApi"));
 }

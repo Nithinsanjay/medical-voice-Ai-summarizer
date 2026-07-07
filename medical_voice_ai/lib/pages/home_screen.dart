@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'download_screen.dart';
-import 'initialization_screen.dart';
+import '../utils/constants.dart';
+import 'recording_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -8,41 +8,23 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Voice AI'),
-        centerTitle: false,
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Icon(Icons.notifications_none),
-          ),
-        ],
+        title: const Text(AppStrings.appTitle),
+        backgroundColor: AppColors.primary,
+        centerTitle: true,
+        actions: const [Padding(padding: EdgeInsets.only(right: 16), child: Icon(Icons.notifications_none))],
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: const EdgeInsets.all(20),
         children: [
-          const Text(
-            'AI Medical Voice Prescription Summarizer',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
+          const Text(AppStrings.appSubtitle, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           const SizedBox(height: 20),
-          _ActiveModelCard(
-            onTap: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const DownloadScreen()));
-            },
-          ),
+          const _ActiveModelCard(),
           const SizedBox(height: 20),
-          _PrimaryActionCard(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const InitializationScreen()),
-              );
-            },
-          ),
+          _PrimaryActionCard(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RecordingScreen()))),
           const SizedBox(height: 20),
-          const _QuickActionGrid(),
+          const _ActionGrid(),
           const SizedBox(height: 24),
           const _TipCard(),
         ],
@@ -52,66 +34,34 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _ActiveModelCard extends StatelessWidget {
-  const _ActiveModelCard({required this.onTap});
-
-  final VoidCallback onTap;
+  const _ActiveModelCard();
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        padding: const EdgeInsets.all(20),
+        child: Row(
           children: [
-            const Text(
-              'Active Model',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(18)),
+              child: const Icon(Icons.memory, color: AppColors.primary, size: 30),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurple.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.memory,
-                    size: 28,
-                    color: Color(0xFF5B22C4),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Qwen-3 0.6B',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Ready to use',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: onTap,
-                  child: const Text('Disconnect'),
-                ),
-              ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text('Gemma 3n E2B', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 4),
+                  Text('Ready to use', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
             ),
+            ElevatedButton(onPressed: () {}, style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary), child: const Text('Disconnect')),
           ],
         ),
       ),
@@ -128,36 +78,20 @@ class _PrimaryActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      color: const Color(0xFF5B22C4),
+      color: AppColors.primary,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Start New Consultation',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+            const Text('Start New Consultation', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
-            const Text(
-              'Tap to begin recording a new medical voice consultation and generate a structured summary.',
-              style: TextStyle(color: Colors.white70),
-            ),
+            const Text('Begin recording a medical consultation and generate a structured summary.', style: TextStyle(color: Colors.white70)),
             const SizedBox(height: 18),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF5B22C4),
-              ),
               onPressed: onPressed,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 14),
-                child: Text('Start New Consultation'),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primary, minimumSize: const Size.fromHeight(56)),
+              child: const Text('Start New Consultation'),
             ),
           ],
         ),
@@ -166,70 +100,44 @@ class _PrimaryActionCard extends StatelessWidget {
   }
 }
 
-class _QuickActionGrid extends StatelessWidget {
-  const _QuickActionGrid();
+class _ActionGrid extends StatelessWidget {
+  const _ActionGrid();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 2,
-          childAspectRatio: 3.2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _QuickActionTile(icon: Icons.mic_none, label: 'Record'),
-            _QuickActionTile(icon: Icons.history, label: 'History'),
-            _QuickActionTile(icon: Icons.storage, label: 'All Models'),
-            _QuickActionTile(icon: Icons.settings, label: 'Settings'),
-          ],
-        ),
-      ],
-    );
-  }
-}
+    final items = [
+      {'icon': Icons.mic_none, 'label': 'Record'},
+      {'icon': Icons.history, 'label': 'History'},
+      {'icon': Icons.download, 'label': 'Download LLM'},
+      {'icon': Icons.notifications, 'label': 'Reminders'},
+    ];
 
-class _QuickActionTile extends StatelessWidget {
-  const _QuickActionTile({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () {},
-      child: Ink(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(icon, color: const Color(0xFF5B22C4)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 3.2,
+      children: items.map((item) {
+        return InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {},
+          child: Ink(
+            decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(18)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Icon(item['icon'] as IconData, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(item['label'] as String, style: const TextStyle(fontWeight: FontWeight.w600))),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 }
@@ -240,20 +148,15 @@ class _TipCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      color: Colors.grey.shade100,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: const [
-            Icon(Icons.lightbulb_outline, color: Color(0xFF5B22C4)),
+            Icon(Icons.lightbulb_outline, color: AppColors.primary),
             SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Tip: Speak clearly in a quiet environment for better transcription accuracy.',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
+            Expanded(child: Text('Tip: Speak clearly in a quiet environment for better transcription accuracy.')),
           ],
         ),
       ),
