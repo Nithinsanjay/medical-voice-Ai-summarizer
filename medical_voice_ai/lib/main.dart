@@ -1,4 +1,6 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:provider/provider.dart';
 import 'pages/home_screen.dart';
 import 'pages/history_screen.dart';
@@ -10,8 +12,12 @@ import 'state/history_viewmodel.dart';
 import 'state/model_download_viewmodel.dart';
 import 'state/settings_viewmodel.dart';
 import 'state/reminder_viewmodel.dart';
+import 'data/database/database_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await FlutterGemma.initialize(inferenceEngines: const [LiteRtLmEngine()]);
+  await DatabaseService.instance.initialize();
   runApp(const VoiceAiApp());
 }
 
@@ -32,7 +38,10 @@ class VoiceAiApp extends StatelessWidget {
         title: 'Voice AI',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5B22C4), brightness: Brightness.light),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF5B22C4),
+            brightness: Brightness.light,
+          ),
           useMaterial3: true,
           scaffoldBackgroundColor: const Color(0xFFF7F5FF),
         ),
@@ -82,7 +91,9 @@ class _VoiceAiRootState extends State<VoiceAiRoot> {
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton.extended(
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DownloadScreen()));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const DownloadScreen()),
+                );
               },
               label: const Text('Download LLM'),
               icon: const Icon(Icons.cloud_download),
