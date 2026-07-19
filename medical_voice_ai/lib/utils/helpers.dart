@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+String generateId() =>
+    DateTime.now().millisecondsSinceEpoch.toString();
+
 String formatDate(DateTime dateTime) {
   return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
 }

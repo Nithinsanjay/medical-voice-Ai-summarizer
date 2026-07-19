@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:provider/provider.dart';
@@ -61,13 +61,6 @@ class VoiceAiRoot extends StatefulWidget {
 class _VoiceAiRootState extends State<VoiceAiRoot> {
   int _selectedIndex = 0;
 
-  static final List<Widget> _screens = <Widget>[
-    const HomeScreen(),
-    const HistoryScreen(),
-    const ModelsScreen(),
-    const SettingsScreen(),
-  ];
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -76,8 +69,17 @@ class _VoiceAiRootState extends State<VoiceAiRoot> {
 
   @override
   Widget build(BuildContext context) {
+    final screens = <Widget>[
+      const HomeScreen(),
+      Consumer<HistoryViewModel>(
+        builder: (ctx, vm, _) => const HistoryScreen(),
+      ),
+      const ModelsScreen(),
+      const SettingsScreen(),
+    ];
+
     return Scaffold(
-      body: SafeArea(child: _screens[_selectedIndex]),
+      body: SafeArea(child: screens[_selectedIndex]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
@@ -88,18 +90,6 @@ class _VoiceAiRootState extends State<VoiceAiRoot> {
           NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const DownloadScreen()),
-                );
-              },
-              label: const Text('Download LLM'),
-              icon: const Icon(Icons.cloud_download),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

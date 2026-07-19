@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   flutter_gemma
-  flutter_sound
   flutter_tts
   printing
   record_windows

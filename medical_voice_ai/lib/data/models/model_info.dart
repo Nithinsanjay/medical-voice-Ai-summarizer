@@ -1,11 +1,11 @@
-enum ModelStatus { installed, available, downloading }
+enum ModelStatus { installed, notDownloaded, downloading }
 
 class ModelInfo {
   ModelInfo({
     required this.name,
     required this.size,
     required this.description,
-    this.status = ModelStatus.available,
+    this.status = ModelStatus.notDownloaded,
     this.progress = 0,
   });
 

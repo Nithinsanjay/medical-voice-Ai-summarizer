@@ -4,23 +4,30 @@ import '../data/repositories/consultation_repository.dart';
 
 class ConsultationViewModel extends ChangeNotifier {
   ConsultationViewModel() {
-    _loadConsultations();
+    loadConsultations();
   }
 
-  final List<Consultation> _consultations = [];
   bool _isRecording = false;
+  bool _isLoading = false;
 
   bool get isRecording => _isRecording;
-  List<Consultation> get consultations => List.unmodifiable(_consultations);
+  bool get isLoading => _isLoading;
+  List<Consultation> get consultations => ConsultationRepository.instance.consultations;
 
-  void _loadConsultations() {
-    _consultations.addAll(ConsultationRepository.instance.consultations);
+  Future<void> loadConsultations() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await ConsultationRepository.instance.init();
+    } catch (e) {
+      debugPrint('Error loading consultations: $e');
+    }
+    _isLoading = false;
     notifyListeners();
   }
 
-  void addConsultation(Consultation consultation) {
-    _consultations.insert(0, consultation);
-    ConsultationRepository.instance.addConsultation(consultation);
+  Future<void> addConsultation(Consultation consultation) async {
+    await ConsultationRepository.instance.addConsultation(consultation);
     notifyListeners();
   }
 

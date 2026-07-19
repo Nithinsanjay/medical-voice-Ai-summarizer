@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseService {
@@ -9,6 +8,8 @@ class DatabaseService {
   Database? _database;
 
   Future<void> initialize() async {
+    if (_database != null) return;
+
     final databasePath = await getDatabasesPath();
     final path = '$databasePath/consultations.db';
 
@@ -33,7 +34,7 @@ class DatabaseService {
   }
 
   Future<void> insertConsultation(Map<String, Object?> values) async {
-    if (_database == null) return;
+    await initialize();
     await _database!.insert(
       'consultations',
       values,
@@ -42,7 +43,16 @@ class DatabaseService {
   }
 
   Future<List<Map<String, Object?>>> loadConsultations() async {
-    if (_database == null) return [];
+    await initialize();
     return await _database!.query('consultations', orderBy: 'dateTime DESC');
+  }
+
+  Future<void> deleteConsultation(String id) async {
+    await initialize();
+    await _database!.delete(
+      'consultations',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }
