@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:whisper_ggml_plus/whisper_ggml_plus.dart';
+import 'model_download_service.dart';
 
 class LocalSttService {
   LocalSttService._();
@@ -10,8 +11,26 @@ class LocalSttService {
 
   Future<void> initialize() async {
     if (_isInitialized) return;
+    
+    // Check if model needs to be migrated from general models folder to Whisper folder
+    final whisperPath = await getWhisperModelPath();
+    if (!File(whisperPath).existsSync()) {
+      final downloadPath = await ModelDownloadService.instance.getModelFilePath('ggml-tiny.bin');
+      if (File(downloadPath).existsSync()) {
+        final whisperDir = Directory(whisperPath).parent;
+        if (!whisperDir.existsSync()) {
+          await whisperDir.create(recursive: true);
+        }
+        await File(downloadPath).copy(whisperPath);
+      }
+    }
+
     await _whisperController.initModel(WhisperModel.tiny);
     _isInitialized = true;
+  }
+
+  Future<String> getWhisperModelPath() async {
+    return await _whisperController.getPath(WhisperModel.tiny);
   }
 
   Future<String> transcribe(File recordingFile) async {
@@ -19,19 +38,18 @@ class LocalSttService {
 
     final path = await _whisperController.getPath(WhisperModel.tiny);
     if (!File(path).existsSync()) {
-      // Fallback simulated transcription if model file does not exist
-      return 'Doctor: How are you feeling now?\n'
-          'Patient: I have fever and headache since yesterday.\n'
-          'Doctor: Okay. I will prescribe some medicines.\n'
-          'Doctor: Take Paracetamol 500 mg twice daily after food for 5 days. Also take Amoxicillin 250 mg three times daily for 7 days.\n'
-          'Patient: Okay doctor.\n'
-          'Doctor: Drink plenty of water and take rest. Come for follow up after 5 days.';
+      throw Exception('Whisper model file (ggml-tiny.bin) not found. Please download it from the Models screen.');
     }
 
     final result = await _whisperController.transcribe(
       model: WhisperModel.tiny,
       audioPath: recordingFile.path,
     );
-    return result?.transcription.text ?? '';
+
+    if (result == null || result.transcription.text.isEmpty) {
+      throw Exception('Transcription produced no result. Ensure the audio is clear.');
+    }
+
+    return result.transcription.text;
   }
 }

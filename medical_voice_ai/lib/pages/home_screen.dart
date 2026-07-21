@@ -49,15 +49,9 @@ class HomeScreen extends StatelessWidget {
             onRecord: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const RecordingScreen())),
             onHistory: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => ChangeNotifierProvider(
-                      create: (_) => HistoryViewModel(),
-                      child: const HistoryScreen(),
-                    ))),
+                builder: (_) => const HistoryScreen())),
             onDownload: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => ChangeNotifierProvider(
-                      create: (_) => ModelDownloadViewModel(),
-                      child: const DownloadScreen(),
-                    ))),
+                builder: (_) => const DownloadScreen())),
             onReminders: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const RemindersScreen())),
           ),
@@ -132,11 +126,7 @@ class _ActiveModelCard extends StatelessWidget {
                   TextButton(
                     onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                            builder: (_) => ChangeNotifierProvider.value(
-                                  value: context
-                                      .read<ModelDownloadViewModel>(),
-                                  child: const DownloadScreen(),
-                                ))),
+                            builder: (_) => const DownloadScreen())),
                     style: TextButton.styleFrom(
                         foregroundColor: AppColors.primary),
                     child: const Text('Download'),

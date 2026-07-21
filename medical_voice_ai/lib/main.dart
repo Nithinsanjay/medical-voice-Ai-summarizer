@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'package:provider/provider.dart';
 import 'pages/home_screen.dart';
 import 'pages/history_screen.dart';
@@ -16,6 +17,9 @@ import 'data/database/database_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FileDownloader().configure(globalConfig: [
+    (Config.requestTimeout, const Duration(seconds: 100)),
+  ]);
   await FlutterGemma.initialize(inferenceEngines: const [LiteRtLmEngine()]);
   await DatabaseService.instance.initialize();
   runApp(const VoiceAiApp());

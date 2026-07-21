@@ -15,7 +15,7 @@ class DatabaseService {
 
     _database = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE consultations(
@@ -26,9 +26,17 @@ class DatabaseService {
             transcript TEXT,
             summary TEXT,
             medicines TEXT,
-            followUp TEXT
+            followUp TEXT,
+            diagnosis TEXT,
+            vitals TEXT
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE consultations ADD COLUMN diagnosis TEXT DEFAULT ""');
+          await db.execute('ALTER TABLE consultations ADD COLUMN vitals TEXT DEFAULT ""');
+        }
       },
     );
   }

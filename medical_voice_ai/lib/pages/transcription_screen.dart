@@ -4,11 +4,17 @@ import '../ai/local_stt_service.dart';
 import '../ai/qwen_service.dart';
 import '../utils/constants.dart';
 import 'summary_screen.dart';
+import 'models_screen.dart';
 
 class TranscriptionScreen extends StatefulWidget {
-  const TranscriptionScreen({super.key, required this.recordingPath});
+  const TranscriptionScreen({
+    super.key,
+    required this.recordingPath,
+    this.initialTranscript = '',
+  });
 
   final String recordingPath;
+  final String initialTranscript;
 
   @override
   State<TranscriptionScreen> createState() => _TranscriptionScreenState();
@@ -25,7 +31,13 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
   void initState() {
     super.initState();
     _editController = TextEditingController();
-    _transcribe();
+    if (widget.initialTranscript.isNotEmpty) {
+      _transcript = widget.initialTranscript;
+      _editController.text = _transcript;
+      _isTranscribing = false;
+    } else {
+      _transcribe();
+    }
   }
 
   @override
@@ -47,16 +59,25 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
         _transcript = result;
         _editController.text = result;
         _isTranscribing = false;
+        _errorMessage = null;
       });
     } catch (e) {
       if (!mounted) return;
+      
+      String msg = e.toString().replaceAll('Exception: ', '');
+      if (msg.contains('not found')) {
+        final path = await LocalSttService.instance.getWhisperModelPath();
+        msg += '\n\nSearched path:\n$path';
+      }
+
       setState(() {
-        _transcript = 'Transcription failed: $e';
-        _editController.text = _transcript;
+        _errorMessage = msg;
         _isTranscribing = false;
       });
     }
   }
+
+  String? _errorMessage;
 
   Future<void> _generateSummary() async {
     final text = _editMode ? _editController.text : _transcript;
@@ -135,9 +156,11 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
                   Text(
                     _isTranscribing
                         ? 'Transcribing audio with Whisper...'
-                        : _editMode
-                            ? 'Edit mode — tap Done when finished'
-                            : 'Transcription complete',
+                        : widget.initialTranscript.isNotEmpty
+                            ? 'Transcription complete (System STT)'
+                            : _editMode
+                                ? 'Edit mode — tap Done when finished'
+                                : 'Transcription complete (Whisper)',
                     style: TextStyle(
                       color: _isTranscribing
                           ? Colors.orange.shade800
@@ -180,8 +203,32 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
                           ],
                         ),
                       )
-                    : _editMode
-                        ? TextField(
+                    : _errorMessage != null
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const ModelsScreen()),
+                                  ),
+                                  icon: const Icon(Icons.download),
+                                  label: const Text('Go to Downloads'),
+                                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _editMode
+                            ? TextField(
                             controller: _editController,
                             maxLines: null,
                             expands: true,

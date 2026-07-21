@@ -26,4 +26,9 @@ class HistoryViewModel extends ChangeNotifier {
     await ConsultationRepository.instance.deleteConsultation(id);
     notifyListeners();
   }
+
+  Future<void> updateConsultation(Consultation consultation) async {
+    await ConsultationRepository.instance.updateConsultation(consultation);
+    notifyListeners();
+  }
 }

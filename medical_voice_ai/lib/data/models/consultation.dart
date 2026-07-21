@@ -8,6 +8,8 @@ class Consultation {
     required this.summary,
     required this.medicines,
     required this.followUp,
+    this.diagnosis = '',
+    this.vitals = '',
   });
 
   final String id;
@@ -18,4 +20,6 @@ class Consultation {
   final String summary;
   final List<String> medicines;
   final String followUp;
+  final String diagnosis;
+  final String vitals;
 }

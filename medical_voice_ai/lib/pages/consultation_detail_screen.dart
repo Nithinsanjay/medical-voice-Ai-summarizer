@@ -19,7 +19,34 @@ class ConsultationDetailScreen extends StatefulWidget {
 class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   bool _isSpeaking = false;
   bool _isExporting = false;
+  bool _isEditing = false;
   int _selectedTab = 0;
+
+  late TextEditingController _summaryController;
+  late TextEditingController _medicinesController;
+  late TextEditingController _followUpController;
+  late TextEditingController _vitalsController;
+  late TextEditingController _diagnosisController;
+
+  @override
+  void initState() {
+    super.initState();
+    _summaryController = TextEditingController(text: widget.consultation.summary);
+    _medicinesController = TextEditingController(text: widget.consultation.medicines.join('\n'));
+    _followUpController = TextEditingController(text: widget.consultation.followUp);
+    _vitalsController = TextEditingController(text: widget.consultation.vitals);
+    _diagnosisController = TextEditingController(text: widget.consultation.diagnosis);
+  }
+
+  @override
+  void dispose() {
+    _summaryController.dispose();
+    _medicinesController.dispose();
+    _followUpController.dispose();
+    _vitalsController.dispose();
+    _diagnosisController.dispose();
+    super.dispose();
+  }
 
   Future<void> _toggleTts() async {
     if (_isSpeaking) {
@@ -27,9 +54,8 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
       setState(() => _isSpeaking = false);
     } else {
       setState(() => _isSpeaking = true);
-      final c = widget.consultation;
       final text =
-          'Summary: ${c.summary}. Medicines: ${c.medicines.join('. ')}. Follow up: ${c.followUp}';
+          'Summary: ${_summaryController.text}. Medicines: ${_medicinesController.text.replaceAll('\n', '. ')}. Follow up: ${_followUpController.text}';
       await TtsService.instance.speak(text);
       if (mounted) setState(() => _isSpeaking = false);
     }
@@ -42,9 +68,11 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
       await PdfService.instance.exportPrescriptionPdf(
         consultationId: c.id,
         patientName: c.patientName,
-        summary: c.summary,
-        medicines: c.medicines,
-        followUp: c.followUp,
+        summary: _summaryController.text,
+        medicines: _medicinesController.text.split('\n').where((s) => s.isNotEmpty).toList(),
+        followUp: _followUpController.text,
+        diagnosis: _diagnosisController.text,
+        vitals: _vitalsController.text,
       );
     } catch (e) {
       if (mounted) {
@@ -94,6 +122,32 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: Icon(_isEditing ? Icons.check : Icons.edit),
+            onPressed: () {
+              if (_isEditing) {
+                // Save changes to DB
+                final updated = Consultation(
+                  id: c.id,
+                  patientName: c.patientName,
+                  dateTime: c.dateTime,
+                  chiefComplaint: _summaryController.text.length > 60 
+                    ? '${_summaryController.text.substring(0, 60)}...' 
+                    : _summaryController.text,
+                  transcript: c.transcript,
+                  summary: _summaryController.text,
+                  medicines: _medicinesController.text.split('\n').where((s) => s.isNotEmpty).toList(),
+                  followUp: _followUpController.text,
+                  diagnosis: _diagnosisController.text,
+                  vitals: _vitalsController.text,
+                );
+                context.read<HistoryViewModel>().updateConsultation(updated);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Consultation updated')));
+              }
+              setState(() => _isEditing = !_isEditing);
+            },
+            tooltip: _isEditing ? 'Save Changes' : 'Edit Records',
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: _deleteConsultation,
@@ -235,9 +289,18 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
   Widget _buildTabContent(Consultation c) {
     switch (_selectedTab) {
       case 0:
-        return _SummaryTab(summary: c.summary, followUp: c.followUp);
+        return _SummaryTab(
+          summaryController: _summaryController,
+          followUpController: _followUpController,
+          vitalsController: _vitalsController,
+          diagnosisController: _diagnosisController,
+          isEditing: _isEditing,
+        );
       case 1:
-        return _MedicinesTab(medicines: c.medicines);
+        return _MedicinesTab(
+          medicinesController: _medicinesController,
+          isEditing: _isEditing,
+        );
       case 2:
         return _TranscriptTab(transcript: c.transcript);
       default:
@@ -247,25 +310,62 @@ class _ConsultationDetailScreenState extends State<ConsultationDetailScreen> {
 }
 
 class _SummaryTab extends StatelessWidget {
-  const _SummaryTab({required this.summary, required this.followUp});
-  final String summary;
-  final String followUp;
+  const _SummaryTab({
+    required this.summaryController,
+    required this.followUpController,
+    required this.vitalsController,
+    required this.diagnosisController,
+    required this.isEditing,
+  });
+  final TextEditingController summaryController;
+  final TextEditingController followUpController;
+  final TextEditingController vitalsController;
+  final TextEditingController diagnosisController;
+  final bool isEditing;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Expanded(
+              child: _InfoCard(
+                  icon: Icons.monitor_heart_outlined,
+                  title: 'Vitals',
+                  child: isEditing
+                      ? TextFormField(controller: vitalsController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder()))
+                      : Text(vitalsController.text.isNotEmpty ? vitalsController.text : 'N/A', style: const TextStyle(fontSize: 14)),
+                  color: Colors.blue.shade700),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _InfoCard(
+                  icon: Icons.assignment_late_outlined,
+                  title: 'Diagnosis',
+                  child: isEditing
+                      ? TextFormField(controller: diagnosisController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder()))
+                      : Text(diagnosisController.text.isNotEmpty ? diagnosisController.text : 'TBD', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  color: Colors.purple.shade700),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         _InfoCard(
             icon: Icons.medical_information_outlined,
             title: 'Clinical Summary',
-            text: summary,
+            child: isEditing 
+              ? TextFormField(controller: summaryController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder()))
+              : Text(summaryController.text, style: const TextStyle(fontSize: 14, height: 1.6)),
             color: Colors.teal.shade700),
         const SizedBox(height: 16),
         _InfoCard(
             icon: Icons.calendar_month_outlined,
             title: 'Follow Up',
-            text: followUp.isNotEmpty ? followUp : 'No follow-up specified.',
+            child: isEditing
+              ? TextFormField(controller: followUpController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder()))
+              : Text(followUpController.text.isNotEmpty ? followUpController.text : 'No follow-up specified.', style: const TextStyle(fontSize: 14, height: 1.6)),
             color: Colors.green.shade700),
       ],
     );
@@ -273,11 +373,32 @@ class _SummaryTab extends StatelessWidget {
 }
 
 class _MedicinesTab extends StatelessWidget {
-  const _MedicinesTab({required this.medicines});
-  final List<String> medicines;
+  const _MedicinesTab({
+    required this.medicinesController,
+    required this.isEditing,
+  });
+  final TextEditingController medicinesController;
+  final bool isEditing;
 
   @override
   Widget build(BuildContext context) {
+    if (isEditing) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+        child: TextFormField(
+          controller: medicinesController,
+          maxLines: null,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'Enter each medicine on a new line',
+            labelText: 'Prescribed Medicines',
+          ),
+        ),
+      );
+    }
+
+    final medicines = medicinesController.text.split('\n').where((s) => s.isNotEmpty).toList();
     if (medicines.isEmpty) {
       return const Center(
           child: Text('No medicines prescribed.',
@@ -364,11 +485,11 @@ class _InfoCard extends StatelessWidget {
   const _InfoCard(
       {required this.icon,
       required this.title,
-      required this.text,
+      required this.child,
       required this.color});
   final IconData icon;
   final String title;
-  final String text;
+  final Widget child;
   final Color color;
 
   @override
@@ -399,8 +520,7 @@ class _InfoCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text(text,
-              style: const TextStyle(fontSize: 14, height: 1.6)),
+          child,
         ],
       ),
     );

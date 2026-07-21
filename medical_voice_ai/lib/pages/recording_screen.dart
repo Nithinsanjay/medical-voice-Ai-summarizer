@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:record/record.dart';
+import '../ai/speech_to_text_service.dart';
+import '../state/settings_viewmodel.dart';
 import '../utils/constants.dart';
 import 'transcription_screen.dart';
 
@@ -21,6 +24,7 @@ class _RecordingScreenState extends State<RecordingScreen>
   Timer? _timer;
   String? _recordingPath;
   String? _errorMessage;
+  String _liveTranscript = '';
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -34,6 +38,14 @@ class _RecordingScreenState extends State<RecordingScreen>
     _pulseAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    final settingsVm = context.read<SettingsViewModel>();
+    if (settingsVm.preferredSttEngine == SttEngine.system) {
+      await SpeechToTextService.instance.initialize();
+    }
     _startRecording();
   }
 
@@ -62,6 +74,8 @@ class _RecordingScreenState extends State<RecordingScreen>
       final path =
           '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
 
+      setState(() => _liveTranscript = '');
+
       await _recorder.start(
         const RecordConfig(
           encoder: AudioEncoder.wav,
@@ -70,6 +84,17 @@ class _RecordingScreenState extends State<RecordingScreen>
         ),
         path: path,
       );
+
+      final settingsVm = context.read<SettingsViewModel>();
+      if (settingsVm.preferredSttEngine == SttEngine.system) {
+        await SpeechToTextService.instance.startListening(
+          onResult: (text) {
+            if (mounted) {
+              setState(() => _liveTranscript = text);
+            }
+          },
+        );
+      }
 
       if (!mounted) return;
       setState(() {
@@ -98,8 +123,19 @@ class _RecordingScreenState extends State<RecordingScreen>
     if (!_isRecording) return;
     if (_isPaused) {
       await _recorder.resume();
+      final settingsVm = context.read<SettingsViewModel>();
+      if (settingsVm.preferredSttEngine == SttEngine.system) {
+        await SpeechToTextService.instance.startListening(
+          onResult: (text) {
+            if (mounted) {
+              setState(() => _liveTranscript = text);
+            }
+          },
+        );
+      }
     } else {
       await _recorder.pause();
+      await SpeechToTextService.instance.stopListening();
     }
     if (!mounted) return;
     setState(() => _isPaused = !_isPaused);
@@ -115,6 +151,8 @@ class _RecordingScreenState extends State<RecordingScreen>
 
     _timer?.cancel();
     final path = await _recorder.stop();
+    await SpeechToTextService.instance.stopListening();
+
     if (!mounted) return;
     setState(() => _isRecording = false);
 
@@ -128,7 +166,10 @@ class _RecordingScreenState extends State<RecordingScreen>
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => TranscriptionScreen(recordingPath: recordingPath),
+        builder: (_) => TranscriptionScreen(
+          recordingPath: recordingPath,
+          initialTranscript: _liveTranscript,
+        ),
       ),
     );
   }
@@ -254,11 +295,51 @@ class _RecordingScreenState extends State<RecordingScreen>
                 letterSpacing: 2,
               ),
             ),
+            if (context.read<SettingsViewModel>().preferredSttEngine == SttEngine.system && _isRecording && !_isPaused)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Listening...',
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 8),
             const Text(
               'Doctor–Patient Conversation',
               style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
+            const SizedBox(height: 16),
+            if (_liveTranscript.isNotEmpty)
+              Expanded(
+                child: SingleChildScrollView(
+                  reverse: true,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _liveTranscript,
+                      style: const TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 12),
               Text(

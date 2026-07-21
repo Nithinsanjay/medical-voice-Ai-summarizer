@@ -1,53 +1,103 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
+import 'model_download_service.dart';
 
 class QwenService {
   QwenService._();
   static final QwenService instance = QwenService._();
 
   InferenceModel? _model;
+  Completer<void>? _initCompleter;
 
-  Future<void> initialize(String modelPath) async {
+  Future<void> initialize([String? modelPath]) async {
     if (_model != null) return;
-    if (modelPath.isEmpty || !File(modelPath).existsSync()) {
-      return; // Run in fallback mode
+    
+    if (_initCompleter != null) {
+      return _initCompleter!.future;
     }
 
+    _initCompleter = Completer<void>();
+    
     try {
+      // Migrate from .bin to .litertlm if needed
+      final oldPath = await ModelDownloadService.instance.getModelFilePath('qwen3_0_6b.bin');
+      final newPath = await ModelDownloadService.instance.getModelFilePath('qwen3_0_6b.litertlm');
+      
+      if (File(oldPath).existsSync() && !File(newPath).existsSync()) {
+        await File(oldPath).rename(newPath);
+        debugPrint('Migrated Qwen model from .bin to .litertlm');
+      }
+
+      // Check if it's already active in the engine
+      try {
+        _model = await FlutterGemma.getActiveModel(maxTokens: 1024);
+      } catch (e) {
+        debugPrint('No active model found or engine not ready: $e');
+        _model = null;
+      }
+
+      if (_model != null) {
+        debugPrint('Qwen model was already active.');
+        _initCompleter!.complete();
+        return;
+      }
+
+      String path = modelPath ?? '';
+      if (path.isEmpty) {
+        path = newPath;
+      }
+
+      if (!File(path).existsSync()) {
+        final error = 'Qwen model file not found at $path. Please download it from the Models screen.';
+        debugPrint(error);
+        throw Exception(error);
+      }
+
+      debugPrint('Initializing Qwen model from $path...');
       await FlutterGemma.installModel(
         modelType: ModelType.qwen3,
         fileType: ModelFileType.binary,
-      ).fromFile(modelPath).install();
+      ).fromFile(path).install();
 
       _model = await FlutterGemma.getActiveModel(maxTokens: 1024);
+      if (_model == null) {
+        throw Exception('Inference model could not be activated after installation.');
+      }
+      debugPrint('Qwen model successfully initialized.');
+      _initCompleter!.complete();
     } catch (e) {
       debugPrint('Qwen model initialization error: $e');
+      _initCompleter!.completeError(e);
+      _initCompleter = null; // Allow retry
+      rethrow;
     }
   }
 
   Future<String> summarize(String transcript) async {
+    try {
+      await initialize();
+    } catch (e) {
+      throw Exception('Initialization failed: ${e.toString().replaceAll('Exception: ', '')}');
+    }
+    
     if (_model == null) {
-      // Fallback structured summary if model not loaded
-      return 'SUMMARY: The patient presented with a high fever and severe headache. The doctor prescribed paracetamol and amoxicillin.\n'
-          'MEDICINES:\n'
-          '- Paracetamol 500 mg: Take 1 tablet twice daily after food for 5 days.\n'
-          '- Amoxicillin 250 mg: Take 1 capsule three times daily for 7 days.\n'
-          'INSTRUCTIONS:\n'
-          '- Get plenty of rest and drink lots of fluids.\n'
-          '- Avoid oily or spicy food.\n'
-          'FOLLOW UP: Return in 5 days if the fever persists.';
+      throw Exception('Qwen model not initialized. Check model downloads.');
     }
 
     final session = await _model!.createSession(
-      systemInstruction: 'You are a medical transcription summary assistant. Analyze the doctor-patient dialogue and output a structured medical summary in the following EXACT format:\n'
-          'SUMMARY: [Brief patient friendly summary]\n'
+      systemInstruction: 'You are a professional medical transcription assistant. Analyze the doctor-patient dialogue and output a structured medical summary in the following EXACT format:\n\n'
+          'VITALS:\n'
+          '- [e.g. BP, Weight, Pulse, Temp if mentioned]\n'
+          'DIAGNOSIS:\n'
+          '- [Clinical diagnosis or impression]\n'
+          'SUMMARY:\n'
+          '- [Brief patient-friendly summary of the visit]\n'
           'MEDICINES:\n'
           '- [Medicine Name & Dosage]: [Frequency & Duration]\n'
-          'INSTRUCTIONS:\n'
-          '- [Instruction 1]\n'
-          '- [Instruction 2]\n'
-          'FOLLOW UP: [Follow up details]',
+          'FOLLOW UP:\n'
+          '- [Specific follow-up date or instructions]',
     );
 
     try {

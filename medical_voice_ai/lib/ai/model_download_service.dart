@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -40,7 +41,11 @@ class ModelDownloadService {
         baseDirectory: BaseDirectory.applicationSupport,
         directory: 'models',
         updates: Updates.statusAndProgress,
+        retries: 5,
+        allowPause: true,
       );
+
+      debugPrint('Starting download for $modelName from $url');
 
       final result = await FileDownloader().download(
         task,
@@ -51,13 +56,32 @@ class ModelDownloadService {
         },
       );
 
-      if (result.status == TaskStatus.complete) {
-        onCompleted();
-      } else {
-        onError('Download failed with status: ${result.status}');
+      switch (result.status) {
+        case TaskStatus.complete:
+          debugPrint('Download complete: $modelName');
+          onCompleted();
+          break;
+        case TaskStatus.canceled:
+          onError('Download canceled');
+          break;
+        case TaskStatus.failed:
+          onError('Download failed: ${result.status}');
+          break;
+        case TaskStatus.notFound:
+          onError('Model file not found on server');
+          break;
+        default:
+          onError('Download stopped: ${result.status}');
+          break;
       }
     } catch (e) {
+      debugPrint('Exception during download: $e');
       onError(e.toString());
     }
+  }
+
+  Future<void> cancelAllDownloads() async {
+    await FileDownloader().cancelTasksWithIds(
+        await FileDownloader().allTaskIds());
   }
 }

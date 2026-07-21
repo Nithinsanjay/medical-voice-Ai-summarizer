@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../state/model_download_viewmodel.dart';
+import '../data/models/model_info.dart';
+import '../utils/constants.dart';
 import 'download_screen.dart';
 
 class ModelsScreen extends StatelessWidget {
@@ -7,65 +11,83 @@ class ModelsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('All Models')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            'Installed Model',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.check_circle, color: Color(0xFF5B22C4)),
-              title: const Text('Qwen-3 0.6B'),
-              subtitle: const Text('Connected · Ready to use'),
-              trailing: TextButton(
-                onPressed: () {},
-                child: const Text('Disconnect'),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Manage AI Models'),
+        centerTitle: true,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: Consumer<ModelDownloadViewModel>(
+        builder: (context, vm, _) {
+          return ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              const Text(
+                'Essential Models',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Available Models',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          _ModelCard(
-            name: 'Qwen-3 0.6B',
-            size: '0.6 GB',
-            status: 'Connected',
-            buttonLabel: 'Details',
-            onPressed: () {},
-          ),
-          const SizedBox(height: 12),
-          _ModelCard(
-            name: 'Gemma-3a 2.6B',
-            size: '2.6 GB',
-            status: 'Available',
-            buttonLabel: 'Download',
+              const SizedBox(height: 8),
+              const Text(
+                'These models are required for offline transcription and clinical summarization.',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+              const SizedBox(height: 20),
+              ...vm.models.asMap().entries.map(
+                    (e) => _ModelManagementCard(
+                      model: e.value,
+                      onDownload: () => vm.downloadModel(e.key),
+                      onDelete: () => _confirmDelete(context, vm, e.key, e.value.name),
+                    ),
+                  ),
+              const Divider(height: 48),
+              const Text(
+                'Storage Tip',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.storage_outlined, color: AppColors.primary),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Models are stored locally. Ensure you have at least 1GB of free space.',
+                        style: TextStyle(fontSize: 13, color: Colors.black87),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, ModelDownloadViewModel vm, int index, String name) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Remove $name?'),
+        content: const Text('This will delete the model from your device storage. You will need to download it again to use offline features.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
             onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const DownloadScreen()));
+              vm.removeModel(index);
+              Navigator.pop(ctx);
             },
-          ),
-          const SizedBox(height: 12),
-          _ModelCard(
-            name: 'Phi-3 5.8B',
-            size: '5.8 GB',
-            status: 'Available',
-            buttonLabel: 'Download',
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const DownloadScreen()));
-            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Remove'),
           ),
         ],
       ),
@@ -73,51 +95,107 @@ class ModelsScreen extends StatelessWidget {
   }
 }
 
-class _ModelCard extends StatelessWidget {
-  const _ModelCard({
-    required this.name,
-    required this.size,
-    required this.status,
-    required this.buttonLabel,
-    required this.onPressed,
+class _ModelManagementCard extends StatelessWidget {
+  const _ModelManagementCard({
+    required this.model,
+    required this.onDownload,
+    required this.onDelete,
   });
 
-  final String name;
-  final String size;
-  final String status;
-  final String buttonLabel;
-  final VoidCallback onPressed;
+  final ModelInfo model;
+  final VoidCallback onDownload;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
+    final isInstalled = model.status == ModelStatus.installed;
+    final isDownloading = model.status == ModelStatus.downloading;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.all(18),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isInstalled ? Colors.green.shade50 : AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                isInstalled ? Icons.check_circle : Icons.offline_bolt_outlined,
+                color: isInstalled ? Colors.green : AppColors.primary,
+              ),
+            ),
+            title: Text(
+              model.name,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('${model.size} • ${isInstalled ? 'Installed' : 'Ready to Download'}'),
+            ),
+            trailing: isInstalled
+                ? IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: onDelete,
+                  )
+                : null,
+          ),
+          if (isDownloading)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: model.progress,
+                      minHeight: 8,
+                      backgroundColor: Colors.grey.shade100,
+                      valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '$size · $status',
-                    style: const TextStyle(color: Colors.grey),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${(model.progress * 100).toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('Downloading...', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
                   ),
                 ],
               ),
+            )
+          else if (!isInstalled)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              child: ElevatedButton.icon(
+                onPressed: onDownload,
+                icon: const Icon(Icons.download),
+                label: const Text('Download Now'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
             ),
-            ElevatedButton(onPressed: onPressed, child: Text(buttonLabel)),
-          ],
-        ),
+        ],
       ),
     );
   }

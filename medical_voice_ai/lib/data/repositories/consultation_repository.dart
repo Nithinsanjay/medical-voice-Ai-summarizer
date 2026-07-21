@@ -24,6 +24,8 @@ class ConsultationRepository {
         summary: map['summary'] as String,
         medicines: List<String>.from(json.decode(map['medicines'] as String)),
         followUp: map['followUp'] as String,
+        diagnosis: map['diagnosis'] as String? ?? '',
+        vitals: map['vitals'] as String? ?? '',
       ));
     }
   }
@@ -39,11 +41,32 @@ class ConsultationRepository {
       'summary': consultation.summary,
       'medicines': json.encode(consultation.medicines),
       'followUp': consultation.followUp,
+      'diagnosis': consultation.diagnosis,
+      'vitals': consultation.vitals,
     });
   }
 
   Future<void> deleteConsultation(String id) async {
     _consultations.removeWhere((item) => item.id == id);
     await DatabaseService.instance.deleteConsultation(id);
+  }
+
+  Future<void> updateConsultation(Consultation consultation) async {
+    final index = _consultations.indexWhere((item) => item.id == consultation.id);
+    if (index != -1) {
+      _consultations[index] = consultation;
+    }
+    await DatabaseService.instance.insertConsultation({
+      'id': consultation.id,
+      'patientName': consultation.patientName,
+      'dateTime': consultation.dateTime.millisecondsSinceEpoch,
+      'chiefComplaint': consultation.chiefComplaint,
+      'transcript': consultation.transcript,
+      'summary': consultation.summary,
+      'medicines': json.encode(consultation.medicines),
+      'followUp': consultation.followUp,
+      'diagnosis': consultation.diagnosis,
+      'vitals': consultation.vitals,
+    });
   }
 }

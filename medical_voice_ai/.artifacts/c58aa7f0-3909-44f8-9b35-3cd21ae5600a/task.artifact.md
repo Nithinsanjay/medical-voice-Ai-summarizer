@@ -1,0 +1,3 @@
+- [x] Fix `QwenService.initialize` to handle `getActiveModel` exceptions
+- [x] Fix `GemmaService.initialize` to handle `getActiveModel` exceptions
+- [x] Verify changes in `qwen_service.dart` and `initialize.dart`

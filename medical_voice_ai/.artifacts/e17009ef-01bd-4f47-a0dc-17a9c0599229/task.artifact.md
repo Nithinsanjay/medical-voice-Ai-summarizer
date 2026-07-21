@@ -1,0 +1,6 @@
+- `[x]` Configure `background_downloader` in `main.dart`
+- `[x]` Update `ModelDownloadService` with robust foreground downloading and logging
+- `[x]` Update `ModelDownloadViewModel` to prevent duplicate state issues
+- `[x]` Transform `ModelsScreen` into a dynamic model management UI
+- `[x]` Cleanup `HomeScreen` navigation to use global providers
+- `[x]` Verify download progress consistency across screens

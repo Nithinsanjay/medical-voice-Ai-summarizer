@@ -28,24 +28,43 @@ class _SummaryScreenState extends State<SummaryScreen> {
   bool _isExporting = false;
   bool _isSaving = false;
   bool _isSaved = false;
+  bool _isEditing = false;
 
   // Parsed data
-  late String _summaryText;
-  late List<String> _medicines;
-  late String _instructions;
-  late String _followUp;
+  late TextEditingController _summaryController;
+  late TextEditingController _medicinesController;
+  late TextEditingController _followUpController;
+  late TextEditingController _vitalsController;
+  late TextEditingController _diagnosisController;
 
   @override
   void initState() {
     super.initState();
+    _summaryController = TextEditingController();
+    _medicinesController = TextEditingController();
+    _followUpController = TextEditingController();
+    _vitalsController = TextEditingController();
+    _diagnosisController = TextEditingController();
     _parseSummary(widget.rawSummary);
   }
 
+  @override
+  void dispose() {
+    _summaryController.dispose();
+    _medicinesController.dispose();
+    _followUpController.dispose();
+    _vitalsController.dispose();
+    _diagnosisController.dispose();
+    super.dispose();
+  }
+
   void _parseSummary(String raw) {
-    _summaryText = _extract(raw, 'SUMMARY') ?? raw;
-    _medicines = _extractList(raw, 'MEDICINES');
-    _instructions = _extract(raw, 'INSTRUCTIONS') ?? '';
-    _followUp = _extract(raw, 'FOLLOW UP') ?? 'Follow up with your doctor.';
+    _vitalsController.text = _extract(raw, 'VITALS') ?? '';
+    _diagnosisController.text = _extract(raw, 'DIAGNOSIS') ?? '';
+    _summaryController.text = _extract(raw, 'SUMMARY') ?? raw;
+    final meds = _extractList(raw, 'MEDICINES');
+    _medicinesController.text = meds.join('\n');
+    _followUpController.text = _extract(raw, 'FOLLOW UP') ?? 'Follow up as advised.';
   }
 
   String? _extract(String raw, String key) {
@@ -74,7 +93,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     } else {
       setState(() => _isSpeaking = true);
       final text =
-          'Summary: $_summaryText. Medicines: ${_medicines.join('. ')}. Instructions: $_instructions. Follow up: $_followUp';
+          'Diagnosis: ${_diagnosisController.text}. Summary: ${_summaryController.text}. Medicines: ${_medicinesController.text.replaceAll('\n', '. ')}. Follow up: ${_followUpController.text}';
       await TtsService.instance.speak(text);
       if (mounted) setState(() => _isSpeaking = false);
     }
@@ -87,9 +106,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
       await PdfService.instance.exportPrescriptionPdf(
         consultationId: id,
         patientName: widget.patientName,
-        summary: _summaryText,
-        medicines: _medicines,
-        followUp: _followUp,
+        summary: _summaryController.text,
+        medicines: _medicinesController.text.split('\n').where((s) => s.isNotEmpty).toList(),
+        followUp: _followUpController.text,
+        diagnosis: _diagnosisController.text,
+        vitals: _vitalsController.text,
       );
     } catch (e) {
       if (mounted) {
@@ -109,13 +130,15 @@ class _SummaryScreenState extends State<SummaryScreen> {
       id: generateId(),
       patientName: widget.patientName,
       dateTime: DateTime.now(),
-      chiefComplaint: _summaryText.length > 60
-          ? '${_summaryText.substring(0, 60)}...'
-          : _summaryText,
+      chiefComplaint: _summaryController.text.length > 60
+          ? '${_summaryController.text.substring(0, 60)}...'
+          : _summaryController.text,
       transcript: widget.transcript,
-      summary: _summaryText,
-      medicines: _medicines,
-      followUp: _followUp,
+      summary: _summaryController.text,
+      medicines: _medicinesController.text.split('\n').where((s) => s.isNotEmpty).toList(),
+      followUp: _followUpController.text,
+      diagnosis: _diagnosisController.text,
+      vitals: _vitalsController.text,
     );
 
     if (!mounted) return;
@@ -151,6 +174,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: Icon(_isEditing ? Icons.check : Icons.edit),
+            onPressed: () => setState(() => _isEditing = !_isEditing),
+            tooltip: _isEditing ? 'Save Edits' : 'Edit Summary',
+          ),
+          IconButton(
             icon: Icon(_isSaved ? Icons.bookmark : Icons.bookmark_border),
             onPressed: (_isSaved || _isSaving) ? null : _saveConsultation,
             tooltip: 'Save to History',
@@ -160,15 +188,70 @@ class _SummaryScreenState extends State<SummaryScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          if (_isEditing)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.edit, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Edit Mode: Modify fields below', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.orange)),
+                  ],
+                ),
+              ),
+            ),
+          
+          // Vitals & Diagnosis
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _SectionCard(
+                  icon: Icons.monitor_heart_outlined,
+                  title: 'Vitals',
+                  color: Colors.blue.shade700,
+                  child: _isEditing
+                      ? TextFormField(controller: _vitalsController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'BP, HR, etc.'))
+                      : Text(_vitalsController.text.isEmpty ? 'N/A' : _vitalsController.text, style: const TextStyle(fontSize: 14)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SectionCard(
+                  icon: Icons.assignment_late_outlined,
+                  title: 'Diagnosis',
+                  color: Colors.purple.shade700,
+                  child: _isEditing
+                      ? TextFormField(controller: _diagnosisController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Clinical Impression'))
+                      : Text(_diagnosisController.text.isEmpty ? 'TBD' : _diagnosisController.text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
           // Summary card
           _SectionCard(
             icon: Icons.medical_information_outlined,
             title: 'Clinical Summary',
             color: Colors.teal.shade700,
-            child: Text(
-              _summaryText,
-              style: const TextStyle(fontSize: 15, height: 1.6),
-            ),
+            child: _isEditing 
+              ? TextFormField(
+                  controller: _summaryController,
+                  maxLines: null,
+                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                )
+              : Text(
+                  _summaryController.text,
+                  style: const TextStyle(fontSize: 15, height: 1.6),
+                ),
           ),
           const SizedBox(height: 16),
 
@@ -177,38 +260,42 @@ class _SummaryScreenState extends State<SummaryScreen> {
             icon: Icons.medication_liquid_outlined,
             title: 'Prescribed Medicines',
             color: Colors.indigo,
-            child: _medicines.isEmpty
+            child: _isEditing
+              ? TextFormField(
+                  controller: _medicinesController,
+                  maxLines: null,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Enter each medicine on a new line',
+                  ),
+                )
+              : _medicinesController.text.isEmpty
                 ? const Text('No medicines prescribed.')
                 : Column(
-                    children: _medicines
+                    children: _medicinesController.text
+                        .split('\n')
+                        .where((l) => l.isNotEmpty)
                         .map((med) => _MedicineRow(medicine: med))
                         .toList(),
                   ),
           ),
           const SizedBox(height: 16),
 
-          // Instructions
-          if (_instructions.isNotEmpty)
-            _SectionCard(
-              icon: Icons.checklist_rtl,
-              title: 'Patient Instructions',
-              color: Colors.deepOrange,
-              child: Text(
-                _instructions,
-                style: const TextStyle(fontSize: 15, height: 1.6),
-              ),
-            ),
-          if (_instructions.isNotEmpty) const SizedBox(height: 16),
-
           // Follow up
           _SectionCard(
             icon: Icons.calendar_month_outlined,
             title: 'Follow Up',
             color: Colors.green.shade700,
-            child: Text(
-              _followUp,
-              style: const TextStyle(fontSize: 15, height: 1.6),
-            ),
+            child: _isEditing
+              ? TextFormField(
+                  controller: _followUpController,
+                  maxLines: null,
+                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                )
+              : Text(
+                  _followUpController.text,
+                  style: const TextStyle(fontSize: 15, height: 1.6),
+                ),
           ),
           const SizedBox(height: 28),
 

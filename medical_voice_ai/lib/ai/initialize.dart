@@ -14,8 +14,16 @@ class GemmaService {
   Future<void> initialize() async {
     if (_model != null) return;
 
-    _model = await FlutterGemma.getActiveModel(maxTokens: 1024);
-    await _createNewChatSession();
+    try {
+      _model = await FlutterGemma.getActiveModel(maxTokens: 1024);
+    } catch (e) {
+      debugPrint('GemmaService: No active model found: $e');
+      _model = null;
+    }
+    
+    if (_model != null) {
+      await _createNewChatSession();
+    }
   }
 
   /// Helper to establish a fresh chat context and clear native locks
