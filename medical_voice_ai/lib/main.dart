@@ -7,7 +7,6 @@ import 'pages/home_screen.dart';
 import 'pages/history_screen.dart';
 import 'pages/models_screen.dart';
 import 'pages/settings_screen.dart';
-import 'pages/download_screen.dart';
 import 'state/consultation_viewmodel.dart';
 import 'state/history_viewmodel.dart';
 import 'state/model_download_viewmodel.dart';
@@ -17,16 +16,21 @@ import 'data/database/database_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(VoiceAiApp(initialization: _initializeApp()));
+}
+
+Future<void> _initializeApp() async {
   await FileDownloader().configure(globalConfig: [
     (Config.requestTimeout, const Duration(seconds: 100)),
   ]);
   await FlutterGemma.initialize(inferenceEngines: const [LiteRtLmEngine()]);
   await DatabaseService.instance.initialize();
-  runApp(const VoiceAiApp());
 }
 
 class VoiceAiApp extends StatelessWidget {
-  const VoiceAiApp({super.key});
+  const VoiceAiApp({super.key, required this.initialization});
+
+  final Future<void> initialization;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +53,104 @@ class VoiceAiApp extends StatelessWidget {
           useMaterial3: true,
           scaffoldBackgroundColor: const Color(0xFFF7F5FF),
         ),
-        home: const VoiceAiRoot(),
+        home: _StartupGate(initialization: initialization),
+      ),
+    );
+  }
+}
+
+class _StartupGate extends StatelessWidget {
+  const _StartupGate({required this.initialization});
+
+  final Future<void> initialization;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: initialization,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done &&
+            !snapshot.hasError) {
+          return const VoiceAiRoot();
+        }
+
+        if (snapshot.hasError) {
+          return _StartupScreen(error: snapshot.error.toString());
+        }
+
+        return const _StartupScreen();
+      },
+    );
+  }
+}
+
+class _StartupScreen extends StatelessWidget {
+  const _StartupScreen({this.error});
+
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasError = error != null;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF050024),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/medicalvoiceailogo.png',
+                  width: 148,
+                  height: 148,
+                  filterQuality: FilterQuality.high,
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Medical Voice AI',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  hasError ? 'Startup failed' : 'Preparing clinical assistant',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                if (hasError)
+                  Text(
+                    error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.red.shade100,
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  )
+                else
+                  const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.6,
+                      color: Color(0xFFE65CFF),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

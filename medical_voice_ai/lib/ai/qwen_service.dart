@@ -58,7 +58,7 @@ class QwenService {
       debugPrint('Initializing Qwen model from $path...');
       await FlutterGemma.installModel(
         modelType: ModelType.qwen3,
-        fileType: ModelFileType.binary,
+        fileType: ModelFileType.litertlm,
       ).fromFile(path).install();
 
       _model = await FlutterGemma.getActiveModel(maxTokens: 1024);
@@ -87,7 +87,7 @@ class QwenService {
     }
 
     final session = await _model!.createSession(
-      systemInstruction: 'You are a professional medical transcription assistant. Analyze the doctor-patient dialogue and output a structured medical summary in the following EXACT format:\n\n'
+      systemInstruction: 'You are a professional medical transcription assistant. The doctor-patient dialogue may be in English, an Indian language, or code-mixed speech. Understand the clinical meaning and output the final structured medical summary in English using the following EXACT format:\n\n'
           'VITALS:\n'
           '- [e.g. BP, Weight, Pulse, Temp if mentioned]\n'
           'DIAGNOSIS:\n'

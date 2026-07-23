@@ -73,7 +73,7 @@ class ModelDownloadViewModel extends ChangeNotifier {
       url = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin?download=true';
     } else {
       fileName = 'qwen3_0_6b.litertlm';
-      url = 'https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/Qwen3-0.6B.litertlm?download=true';
+      url = 'https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/Qwen3-0.6B.litertlm';
     }
 
     await ModelDownloadService.instance.downloadModel(

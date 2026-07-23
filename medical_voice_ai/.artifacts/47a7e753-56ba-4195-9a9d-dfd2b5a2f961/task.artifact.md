@@ -1,0 +1,4 @@
+- [/] Update `qwen_service.dart` to use `ModelFileType.litertlm`
+- [ ] Update `model_download_viewmodel.dart` with correct Hugging Face URL
+- [ ] Restore standard build paths in `android/build.gradle.kts`
+- [ ] Clean and rebuild the project
