@@ -11,20 +11,56 @@ class QwenService {
   InferenceModel? _model;
   Completer<void>? _initCompleter;
 
+  String buildSystemInstruction() {
+    return '''
+You are a professional medical transcription and summarization assistant.
+The doctor-patient conversation may be in English, Hindi, Tamil, Telugu, or a code-mixed Indian language.
+Your task is to understand the clinical meaning and produce a structured medical summary in English.
+
+IMPORTANT RULES:
+- Extract every medically relevant detail, especially medicines, dosages, frequencies, diagnoses, symptoms, vitals, and follow-up instructions.
+- Do not omit medicines just because they are spoken in Hindi, Tamil, Telugu, or transliterated form.
+- If a medicine name appears in a regional language, preserve it in the MEDICINES section and add the best English translation in brackets when obvious.
+- If the transcript is noisy or mixed-language, infer the intended medicine and dosage from context.
+- Keep the final summary in English, but preserve regional-language medicine names whenever possible.
+
+Return the answer using this EXACT format:
+
+VITALS:
+- [BP, weight, pulse, temperature, or "Not mentioned"]
+
+DIAGNOSIS:
+- [Primary diagnosis or impression]
+
+SUMMARY:
+- [Short patient-friendly summary of the visit]
+
+MEDICINES:
+- [Medicine name and dosage]: [frequency and duration]
+
+FOLLOW UP:
+- [Specific follow-up and instructions]
+''';
+  }
+
   Future<void> initialize([String? modelPath]) async {
     if (_model != null) return;
-    
+
     if (_initCompleter != null) {
       return _initCompleter!.future;
     }
 
     _initCompleter = Completer<void>();
-    
+
     try {
       // Migrate from .bin to .litertlm if needed
-      final oldPath = await ModelDownloadService.instance.getModelFilePath('qwen3_0_6b.bin');
-      final newPath = await ModelDownloadService.instance.getModelFilePath('qwen3_0_6b.litertlm');
-      
+      final oldPath = await ModelDownloadService.instance.getModelFilePath(
+        'qwen3_0_6b.bin',
+      );
+      final newPath = await ModelDownloadService.instance.getModelFilePath(
+        'qwen3_0_6b.litertlm',
+      );
+
       if (File(oldPath).existsSync() && !File(newPath).existsSync()) {
         await File(oldPath).rename(newPath);
         debugPrint('Migrated Qwen model from .bin to .litertlm');
@@ -50,7 +86,8 @@ class QwenService {
       }
 
       if (!File(path).existsSync()) {
-        final error = 'Qwen model file not found at $path. Please download it from the Models screen.';
+        final error =
+            'Qwen model file not found at $path. Please download it from the Models screen.';
         debugPrint(error);
         throw Exception(error);
       }
@@ -63,7 +100,9 @@ class QwenService {
 
       _model = await FlutterGemma.getActiveModel(maxTokens: 1024);
       if (_model == null) {
-        throw Exception('Inference model could not be activated after installation.');
+        throw Exception(
+          'Inference model could not be activated after installation.',
+        );
       }
       debugPrint('Qwen model successfully initialized.');
       _initCompleter!.complete();
@@ -79,29 +118,27 @@ class QwenService {
     try {
       await initialize();
     } catch (e) {
-      throw Exception('Initialization failed: ${e.toString().replaceAll('Exception: ', '')}');
+      throw Exception(
+        'Initialization failed: ${e.toString().replaceAll('Exception: ', '')}',
+      );
     }
-    
+
     if (_model == null) {
       throw Exception('Qwen model not initialized. Check model downloads.');
     }
 
     final session = await _model!.createSession(
-      systemInstruction: 'You are a professional medical transcription assistant. The doctor-patient dialogue may be in English, an Indian language, or code-mixed speech. Understand the clinical meaning and output the final structured medical summary in English using the following EXACT format:\n\n'
-          'VITALS:\n'
-          '- [e.g. BP, Weight, Pulse, Temp if mentioned]\n'
-          'DIAGNOSIS:\n'
-          '- [Clinical diagnosis or impression]\n'
-          'SUMMARY:\n'
-          '- [Brief patient-friendly summary of the visit]\n'
-          'MEDICINES:\n'
-          '- [Medicine Name & Dosage]: [Frequency & Duration]\n'
-          'FOLLOW UP:\n'
-          '- [Specific follow-up date or instructions]',
+      systemInstruction: buildSystemInstruction(),
     );
 
     try {
-      await session.addQueryChunk(Message.text(text: transcript, isUser: true));
+      await session.addQueryChunk(
+        Message.text(
+          text:
+              'TRANSCRIPT TO ANALYZE:\n$transcript\n\nPlease follow the format exactly and ensure every medicine mentioned is captured.',
+          isUser: true,
+        ),
+      );
       final response = await session.getResponse();
       return response;
     } finally {

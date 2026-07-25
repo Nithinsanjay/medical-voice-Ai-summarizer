@@ -334,20 +334,20 @@ class _SummaryTab extends StatelessWidget {
               child: _InfoCard(
                   icon: Icons.monitor_heart_outlined,
                   title: 'Vitals',
+                  color: Colors.blue.shade700,
                   child: isEditing
                       ? TextFormField(controller: vitalsController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder()))
-                      : Text(vitalsController.text.isNotEmpty ? vitalsController.text : 'N/A', style: const TextStyle(fontSize: 14)),
-                  color: Colors.blue.shade700),
+                      : Text(vitalsController.text.isNotEmpty ? vitalsController.text : 'N/A', style: const TextStyle(fontSize: 14))),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _InfoCard(
                   icon: Icons.assignment_late_outlined,
                   title: 'Diagnosis',
+                  color: Colors.purple.shade700,
                   child: isEditing
                       ? TextFormField(controller: diagnosisController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder()))
-                      : Text(diagnosisController.text.isNotEmpty ? diagnosisController.text : 'TBD', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  color: Colors.purple.shade700),
+                      : Text(diagnosisController.text.isNotEmpty ? diagnosisController.text : 'TBD', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold))),
             ),
           ],
         ),
@@ -355,18 +355,18 @@ class _SummaryTab extends StatelessWidget {
         _InfoCard(
             icon: Icons.medical_information_outlined,
             title: 'Clinical Summary',
+            color: Colors.teal.shade700,
             child: isEditing 
               ? TextFormField(controller: summaryController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder()))
-              : Text(summaryController.text, style: const TextStyle(fontSize: 14, height: 1.6)),
-            color: Colors.teal.shade700),
+              : Text(summaryController.text, style: const TextStyle(fontSize: 14, height: 1.6))),
         const SizedBox(height: 16),
         _InfoCard(
             icon: Icons.calendar_month_outlined,
             title: 'Follow Up',
+            color: Colors.green.shade700,
             child: isEditing
               ? TextFormField(controller: followUpController, maxLines: null, decoration: const InputDecoration(border: OutlineInputBorder()))
-              : Text(followUpController.text.isNotEmpty ? followUpController.text : 'No follow-up specified.', style: const TextStyle(fontSize: 14, height: 1.6)),
-            color: Colors.green.shade700),
+              : Text(followUpController.text.isNotEmpty ? followUpController.text : 'No follow-up specified.', style: const TextStyle(fontSize: 14, height: 1.6))),
       ],
     );
   }

@@ -1,0 +1,3 @@
+- [x] Apply canonical path fix to `android/settings.gradle.kts`
+- [x] Verify file modification
+- [x] Provide cleanup and sync instructions

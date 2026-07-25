@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../state/model_download_viewmodel.dart';
 import '../data/models/model_info.dart';
 import '../utils/constants.dart';
-import 'download_screen.dart';
 
 class ModelsScreen extends StatelessWidget {
   const ModelsScreen({super.key});

@@ -54,19 +54,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 40),
           const Text('Transcription Engine', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          RadioListTile<SttEngine>(
-            title: const Text('Whisper (On-device, Offline)'),
-            subtitle: const Text('High accuracy, processes after recording'),
-            value: SttEngine.whisper,
+          RadioGroup<SttEngine>(
             groupValue: settingsVm.preferredSttEngine,
-            onChanged: (val) => settingsVm.setSttEngine(val!),
-          ),
-          RadioListTile<SttEngine>(
-            title: const Text('System STT (Real-time)'),
-            subtitle: const Text('Lower accuracy, instant results'),
-            value: SttEngine.system,
-            groupValue: settingsVm.preferredSttEngine,
-            onChanged: (val) => settingsVm.setSttEngine(val!),
+            onChanged: (val) {
+              if (val != null) settingsVm.setSttEngine(val);
+            },
+            child: Column(
+              children: [
+                RadioListTile<SttEngine>(
+                  title: const Text('Whisper (On-device, Offline)'),
+                  subtitle: const Text('High accuracy, processes after recording'),
+                  value: SttEngine.whisper,
+                ),
+                RadioListTile<SttEngine>(
+                  title: const Text('System STT (Real-time)'),
+                  subtitle: const Text('Lower accuracy, instant results'),
+                  value: SttEngine.system,
+                ),
+              ],
+            ),
           ),
           const Divider(height: 32),
           const Text('AI Summary Model', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),

@@ -58,6 +58,7 @@ class _RecordingScreenState extends State<RecordingScreen>
   }
 
   Future<void> _startRecording() async {
+    final settingsVm = context.read<SettingsViewModel>();
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       if (mounted) {
@@ -85,7 +86,6 @@ class _RecordingScreenState extends State<RecordingScreen>
         path: path,
       );
 
-      final settingsVm = context.read<SettingsViewModel>();
       if (settingsVm.preferredSttEngine == SttEngine.system) {
         await SpeechToTextService.instance.startListening(
           onResult: (text) {
@@ -121,9 +121,9 @@ class _RecordingScreenState extends State<RecordingScreen>
 
   Future<void> _togglePause() async {
     if (!_isRecording) return;
+    final settingsVm = context.read<SettingsViewModel>();
     if (_isPaused) {
       await _recorder.resume();
-      final settingsVm = context.read<SettingsViewModel>();
       if (settingsVm.preferredSttEngine == SttEngine.system) {
         await SpeechToTextService.instance.startListening(
           onResult: (text) {

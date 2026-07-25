@@ -1,0 +1,7 @@
+- [x] Update `android/app/build.gradle.kts`
+- [x] Update `android/build.gradle.kts`
+- [x] Update `android/settings.gradle.kts`
+- [x] Update `android/gradle/wrapper/gradle-wrapper.properties` to Gradle 9.3.1
+- [x] Update `android/gradle.properties` with compatibility flags
+- [x] Identify and document environment variable conflict
+- [x] Create final walkthrough artifact

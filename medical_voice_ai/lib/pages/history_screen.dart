@@ -92,7 +92,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                         itemCount: consultations.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           return _ConsultationCard(

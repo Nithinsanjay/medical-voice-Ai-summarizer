@@ -1,0 +1,5 @@
+- `[x]` Update `gradle-wrapper.properties` to Gradle 8.10.2
+- `[x]` Update `settings.gradle.kts` with AGP 8.7.3 and Kotlin 2.0.21
+- `[x]` Update `build.gradle.kts` with Kotlin 2.0.21
+- `[/]` Verify Gradle sync using `./gradlew tasks`
+- `[ ]` Trigger IDE Gradle Sync

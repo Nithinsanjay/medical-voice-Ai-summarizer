@@ -1,0 +1,5 @@
+- [x] Update Gradle Wrapper to 9.3.1
+- [x] Update AGP to 8.4.2 in `android/settings.gradle`
+- [x] Ensure Kotlin version is 2.2.20 in `android/build.gradle.kts`
+- [/] Run `flutter clean` and `flutter pub get`
+- [ ] Verify Gradle Sync

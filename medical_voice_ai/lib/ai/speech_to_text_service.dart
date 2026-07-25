@@ -34,10 +34,12 @@ class SpeechToTextService {
 
     await _speech.listen(
       onResult: (result) => onResult(result.recognizedWords),
-      listenFor: listenFor ?? const Duration(minutes: 5),
-      pauseFor: pauseFor ?? const Duration(seconds: 10),
-      cancelOnError: false,
-      partialResults: true,
+      listenOptions: SpeechListenOptions(
+        listenFor: listenFor ?? const Duration(minutes: 5),
+        pauseFor: pauseFor ?? const Duration(seconds: 10),
+        cancelOnError: false,
+        partialResults: true,
+      ),
     );
   }
 
